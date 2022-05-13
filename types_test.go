@@ -127,6 +127,7 @@ func TestToInt(t *testing.T) {
 		{"123", 123, nil},
 		{"1.2.3", 1, nil},
 		{"0.123", 0, nil},
+		{"?", 0, nil},
 	}
 
 	for idx, item := range TestCase {

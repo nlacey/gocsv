@@ -44,21 +44,9 @@ e,BAD_INPUT,b`)
 	d = newSimpleDecoderFromReader(b)
 	samples = []Sample{}
 	err := readTo(d, &samples)
-	if err == nil {
-		t.Fatalf("Expected error from bad input, got: %+v", samples)
+	if err != nil{
+		t.Fatalf("shouldn't get errors any more")
 	}
-	switch actualErr := err.(type) {
-	case *csv.ParseError:
-		if actualErr.Line != 3 {
-			t.Fatalf("Expected csv.ParseError on line 3, got: %d", actualErr.Line)
-		}
-		if actualErr.Column != 2 {
-			t.Fatalf("Expected csv.ParseError in column 2, got: %d", actualErr.Column)
-		}
-	default:
-		t.Fatalf("incorrect error type: %T", err)
-	}
-
 }
 
 func Test_readToNormalized(t *testing.T) {
@@ -99,19 +87,8 @@ e,BAD_INPUT,b`)
 	d = newSimpleDecoderFromReader(b)
 	samples = []Sample{}
 	err := readTo(d, &samples)
-	if err == nil {
-		t.Fatalf("Expected error from bad input, got: %+v", samples)
-	}
-	switch actualErr := err.(type) {
-	case *csv.ParseError:
-		if actualErr.Line != 3 {
-			t.Fatalf("Expected csv.ParseError on line 3, got: %d", actualErr.Line)
-		}
-		if actualErr.Column != 2 {
-			t.Fatalf("Expected csv.ParseError in column 2, got: %d", actualErr.Column)
-		}
-	default:
-		t.Fatalf("incorrect error type: %T", err)
+	if err != nil {
+		t.Fatalf("Shouldn't get error any more %v", err)
 	}
 
 }
@@ -517,10 +494,8 @@ func TestRenamedTypesUnmarshal(t *testing.T) {
 4.2;2.4`)
 	d = newSimpleDecoderFromReader(b)
 	samples = samples[:0]
-	if perr, _ := readTo(d, &samples).(*csv.ParseError); perr == nil {
-		t.Fatalf("Expected ParseError, got nil.")
-	} else if _, ok := perr.Err.(UnmarshalError); !ok {
-		t.Fatalf("Expected UnmarshalError, got %v", perr.Err)
+	if perr, _ := readTo(d, &samples).(*csv.ParseError); perr != nil {
+		t.Fatalf("Shouldn't get errors any more got %v",perr)
 	}
 }
 

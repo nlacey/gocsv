@@ -3,6 +3,7 @@ package gocsv
 import (
 	"encoding"
 	"fmt"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -126,9 +127,17 @@ func toInt(in interface{}) (int64, error) {
 
 		//Only call ParseInt with base 0 for items starting with 2 character base encoding,  ea 0001239  needs to be equal to 1239 and not and error on base 8 encoding
 		if len(out[0]) > 1 && (strings.EqualFold(out[0][:2], "0b") || strings.EqualFold(out[0][:2], "0x") || strings.EqualFold(out[0][:2], "0o")) {
-			return strconv.ParseInt(out[0], 0, 64)
+			ret, err := strconv.ParseInt(out[0], 0, 64)
+			if err != nil {
+				log.Println("unable to get int from ", out[0])
+			}
+			return ret, nil
 		}
-		return strconv.ParseInt(out[0], 10, 64)
+		ret, err := strconv.ParseInt(out[0], 10, 64)
+		if err != nil {
+			log.Println("unable to get int from ", out[0])
+		}
+		return ret, nil
 	case reflect.Bool:
 		if inValue.Bool() {
 			return 1, nil
@@ -141,7 +150,8 @@ func toInt(in interface{}) (int64, error) {
 	case reflect.Float32, reflect.Float64:
 		return int64(inValue.Float()), nil
 	}
-	return 0, fmt.Errorf("No known conversion from " + inValue.Type().String() + " to int")
+	log.Printf("No known conversion from " + inValue.Type().String() + " to int")
+	return 0, nil
 }
 
 func toUint(in interface{}) (uint64, error) {
@@ -158,11 +168,15 @@ func toUint(in interface{}) (uint64, error) {
 		if strings.Contains(s, ".") {
 			f, err := strconv.ParseFloat(s, 64)
 			if err != nil {
-				return 0, err
+				log.Println("unable to get int from ", s)
 			}
 			return uint64(f), nil
 		}
-		return strconv.ParseUint(s, 0, 64)
+		f, err := strconv.ParseUint(s, 0, 64)
+		if err != nil {
+			log.Println("unable to get int from ", s)
+		}
+		return f, nil
 	case reflect.Bool:
 		if inValue.Bool() {
 			return 1, nil
@@ -218,78 +232,78 @@ func setField(field reflect.Value, value string, omitEmpty bool) error {
 	case string:
 		s, err := toString(value)
 		if err != nil {
-			return err
+			log.Println("Unable to parse ", value)
 		}
 		field.SetString(s)
 	case bool:
 		b, err := toBool(value)
 		if err != nil {
-			return err
+			log.Println("Unable to get bool from", value)
 		}
 		field.SetBool(b)
 	case int, int8, int16, int32, int64:
 		i, err := toInt(value)
 		if err != nil {
-			return err
+			log.Println("Unable to get int from", value)
 		}
 		field.SetInt(i)
 	case uint, uint8, uint16, uint32, uint64:
 		ui, err := toUint(value)
 		if err != nil {
-			return err
+			log.Println("Unable to get uint from", value)
 		}
 		field.SetUint(ui)
 	case float32, float64:
 		f, err := toFloat(value)
 		if err != nil {
-			return err
+			log.Println("Unable to get float from", value)
 		}
 		field.SetFloat(f)
 	default:
 		// Not a native type, check for unmarshal method
 		if err := unmarshall(field, value); err != nil {
 			if _, ok := err.(NoUnmarshalFuncError); !ok {
-				return err
+				log.Println("Unable to unmarshal", value)
 			}
 			// Could not unmarshal, check for kind, e.g. renamed type from basic type
 			switch field.Kind() {
 			case reflect.String:
 				s, err := toString(value)
 				if err != nil {
-					return err
+					log.Println("Unable to unmarshal", value)
 				}
 				field.SetString(s)
 			case reflect.Bool:
 				b, err := toBool(value)
 				if err != nil {
-					return err
+					log.Println("Unable to get bool from", value)
 				}
 				field.SetBool(b)
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				i, err := toInt(value)
 				if err != nil {
-					return err
+					log.Println("Unable to get int from", value)
 				}
 				field.SetInt(i)
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				ui, err := toUint(value)
 				if err != nil {
-					return err
+					log.Println("Unable to get uint from", value)
 				}
 				field.SetUint(ui)
 			case reflect.Float32, reflect.Float64:
 				f, err := toFloat(value)
 				if err != nil {
-					return err
+					log.Println("Unable to get float from", value)
 				}
 				field.SetFloat(f)
 			case reflect.Slice, reflect.Struct:
 				err := json.Unmarshal([]byte(value), field.Addr().Interface())
 				if err != nil {
-					return err
+					log.Println("Unable to unmarsharal", value)
 				}
 			default:
-				return err
+				log.Println("Unable to unmarsharal unhandled struct type!")
 			}
 		} else {
 			return nil
